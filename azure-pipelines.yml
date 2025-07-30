@@ -1,5 +1,5 @@
 pool:
-  name: 'rollout'
+  name: 'dev-pool'
 
 stages:
 - stage: Deploy
@@ -10,7 +10,6 @@ stages:
     - task: Kubernetes@1
       inputs:
         connectionType: 'Kubernetes Service Connection'
-        #azureSubscription: 'k8sconnection'
         kubernetesServiceEndpoint: 'k8sconnection'
         azureResourceGroup: 'dev-env'
         kubernetesCluster: 'dev-cluster'
