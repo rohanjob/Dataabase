@@ -10,7 +10,7 @@ stages:
     - task: Kubernetes@1
       inputs:
         connectionType: 'Kubernetes Service Connection'
-        kubernetesServiceEndpoint: 'aks-ssp'
+        kubernetesServiceEndpoint: 'aks-spp'
         azureResourceGroup: 'dev-envss'
         kubernetesCluster: 'dev-clus'
         namespace: 'three-tier'
