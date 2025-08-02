@@ -1,5 +1,5 @@
 pool:
-  name: 'dev-pool'
+  name: 'Shiva'
 
 stages:
 - stage: Deploy
@@ -11,8 +11,8 @@ stages:
       inputs:
         connectionType: 'Kubernetes Service Connection'
         kubernetesServiceEndpoint: 'k8sconnection'
-        azureResourceGroup: 'dev-env'
-        kubernetesCluster: 'dev-cluster'
+        azureResourceGroup: 'dev-envss'
+        kubernetesCluster: 'dev-clus'
         namespace: 'three-tier'
         command: 'apply'
         arguments: '-f DB/database.yml'
