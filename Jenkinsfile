@@ -11,7 +11,7 @@ pipeline {
 
         stage('Checkout MongoDB Repo') {
             steps {
-                git branch: 'main', url: 'https://github.com/your-username/MongoDB.git'
+                git branch: 'main', url: 'https://github.com/rohanjob/Dataabase.git'
             }
         }
 
@@ -26,7 +26,7 @@ pipeline {
         stage('Checkout Backend Repo') {
             steps {
                 dir("${BACKEND_DIR}") {
-                    git branch: 'main', url: 'https://github.com/your-username/Backend.git'
+                    git branch: 'main', url: 'https://github.com/rohanjob/Backend.git'
                 }
             }
         }
@@ -34,7 +34,7 @@ pipeline {
         stage('Checkout Frontend Repo') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    git branch: 'main', url: 'https://github.com/your-username/Frontend.git'
+                    git branch: 'main', url: 'https://github.com/rohanjob/Frontend.git'
                 }
             }
         }
