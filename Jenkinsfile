@@ -2,70 +2,72 @@ pipeline {
     agent any
 
     environment {
-        DB_DIR = "C:/Jenkins/workspace/MongoDB"
-        BACKEND_DIR = "C:/Jenkins/workspace/Backend"
-        FRONTEND_DIR = "C:/Jenkins/workspace/Frontend"
+        ACR_NAME = 'perseverance01'
+        RESOURCE_GROUP = 'dev-env'
+        AKS_CLUSTER = 'dev-cluster'
+        BUILD_TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
-
-        stage('Checkout MongoDB Repo') {
+        stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/rohanjob/Dataabase.git'
             }
         }
 
-        stage('Setup MongoDB') {
+        stage('Login to Azure') {
             steps {
-                echo "Starting MongoDB..."
-                bat 'net start MongoDB'
-                bat "mongo < ${DB_DIR}/init.js"
+                sh '''
+                az login --service-principal \
+                    -u $AZURE_CLIENT_ID \
+                    -p $AZURE_CLIENT_SECRET \
+                    --tenant $AZURE_TENANT_ID
+                az account set --subscription $(az account show --query id -o tsv)
+                '''
             }
         }
 
-        stage('Checkout Backend Repo') {
+        stage('Login to ACR') {
             steps {
-                dir("${BACKEND_DIR}") {
-                    git branch: 'main', url: 'https://github.com/rohanjob/Backend.git'
-                }
+                sh '''
+                az acr login --name $ACR_NAME
+                '''
             }
         }
 
-        stage('Checkout Frontend Repo') {
+        stage('Build & Push Images') {
             steps {
-                dir("${FRONTEND_DIR}") {
-                    git branch: 'main', url: 'https://github.com/rohanjob/Frontend.git'
-                }
+                sh '''
+                docker build -t $ACR_NAME.azurecr.io/backend:$BUILD_TAG ./backend
+                docker push $ACR_NAME.azurecr.io/backend:$BUILD_TAG
+
+                docker build -t $ACR_NAME.azurecr.io/frontend:$BUILD_TAG ./frontend
+                docker push $ACR_NAME.azurecr.io/frontend:$BUILD_TAG
+                '''
             }
         }
 
-        stage('Deploy Backend & Frontend in Parallel') {
-            parallel {
-                stage('Backend') {
-                    steps {
-                        dir("${BACKEND_DIR}") {
-                            bat 'npm install'
-                            bat 'node index.js'  // Start backend server
-                        }
-                    }
-                }
+        stage('Deploy to AKS') {
+            steps {
+                sh '''
+                az aks get-credentials --resource-group $RESOURCE_GROUP --name $AKS_CLUSTER --overwrite-existing
 
-                stage('Frontend') {
-                    steps {
-                        dir("${FRONTEND_DIR}") {
-                            bat 'npm install'
-                            bat 'npm run build'
-                            bat 'npx serve -s build -l 3000'
-                        }
-                    }
-                }
+                kubectl set image deployment/backend backend=$ACR_NAME.azurecr.io/backend:$BUILD_TAG -n three-tier --record || true
+                kubectl set image deployment/frontend frontend=$ACR_NAME.azurecr.io/frontend:$BUILD_TAG -n three-tier --record || true
+
+                kubectl rollout status deployment/backend -n three-tier
+                kubectl rollout status deployment/frontend -n three-tier
+                '''
             }
         }
-
     }
 
     post {
-        success { echo "Full-Stack Multi-Repo Deployment Successful!" }
-        failure { echo "Deployment Failed!" }
+        success {
+            echo "✅ Successfully deployed build number ${BUILD_TAG}!"
+        }
+        failure {
+            echo "❌ Deployment failed. Check logs for details."
+        }
     }
 }
